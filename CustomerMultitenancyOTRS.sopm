@@ -1,16 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <otrs_package version="1.1">
-    <Name>RotherOSS-CustomerMultitenancyOTRS</Name>
-    <Version>6.0.1</Version>
+    <Name>CustomerMultitenancy</Name>
+    <Version>10.0.0</Version>
     <Vendor>Rother OSS GmbH</Vendor>
     <URL>https://rother-oss.com/</URL>
     <License>GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007</License>
-    <ChangeLog Date="2021-07-22 07:00:00" Version="6.0.1">Initial Version.</ChangeLog>
     <Description Lang="en">Group-based multitenancy for customer and customer user.</Description>
     <Description Lang="de">Gruppenbasierte Mandantenfähigkeit für Kunden und Kundenbenutzer.</Description>
-    <Framework>6.0.x</Framework>
-    <BuildDate>?</BuildDate>
-    <BuildHost>?</BuildHost>
+    <Framework>10.0.x</Framework>
     <Filelist>
         <File Permission="660" Location="Custom/Kernel/Modules/AdminCustomerCompany.pm"/>
         <File Permission="660" Location="Custom/Kernel/Modules/AdminCustomerUser.pm"/>
@@ -19,8 +16,8 @@
         <File Permission="660" Location="Custom/Kernel/System/CustomerUser/LDAP.pm"/>
         <File Permission="660" Location="Custom/Kernel/System/CustomerCompany.pm"/>
         <File Permission="660" Location="Custom/Kernel/System/CustomerUser.pm"/>
-        <File Permission="660" Location="Kernel/Config/Files/XML/RotherOSSCustomerMultitenancy.xml"/>
-        <File Permission="660" Location="Kernel/Language/de_RotherOSSCustomerMultitenancy.pm"/>
+        <File Permission="660" Location="Kernel/Config/Files/XML/CustomerMultitenancy.xml"/>
+        <File Permission="660" Location="Kernel/Language/de_CustomerMultitenancy.pm"/>
     </Filelist>
     <DatabaseInstall Type="post">
         <TableAlter Name="customer_user">
