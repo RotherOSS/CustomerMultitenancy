@@ -1,11 +1,19 @@
 # --
-# Copyright (C) 2001-2021 OTRS AG, https://otrs.com/
-# Copyright (C) 2021 Znuny GmbH, https://znuny.org/
-# Copyright (C) 2021 Rother OSS GmbH, https://rother-oss.com/
+# OTOBO is a web-based ticketing system for service organisations.
 # --
-# This software comes with ABSOLUTELY NO WARRANTY. For details, see
-# the enclosed file COPYING for license information (GPL). If you
-# did not receive this file, see https://www.gnu.org/licenses/gpl-3.0.txt.
+# Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
+# Copyright (C) 2019-2021 Rother OSS GmbH, https://otobo.de/
+# --
+# $origin: otobo - 866ca7d0103f52a61cedf7c5b10cac6b9cb56991 - Kernel/Modules/AdminCustomerUser.pm
+# --
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
 # --
 
 package Kernel::Modules::AdminCustomerUser;
@@ -149,12 +157,8 @@ sub Run {
             $Expires = '';
         }
 
-        my $SecureAttribute;
-        if ( $ConfigObject->Get('HttpType') eq 'https' ) {
-
-            # Restrict Cookie to HTTPS if it is used.
-            $SecureAttribute = 1;
-        }
+        # Restrict Cookie to HTTPS if it is used.
+        my $CookieSecureAttribute = $ConfigObject->Get('HttpType') eq 'https' ? 1 : undef;
 
         my $LayoutObject = Kernel::Output::HTML::Layout->new(
             %{$Self},
@@ -164,7 +168,7 @@ sub Run {
                     Value    => $NewSessionID,
                     Expires  => $Expires,
                     Path     => $ConfigObject->Get('ScriptAlias'),
-                    Secure   => scalar $SecureAttribute,
+                    Secure   => $CookieSecureAttribute,
                     HTTPOnly => 1,
                 ),
             },
@@ -175,7 +179,7 @@ sub Run {
         # log event
         $Kernel::OM->Get('Kernel::System::Log')->Log(
             Priority => 'notice',
-            Message =>
+            Message  =>
                 "Switched from Agent to Customer ($Self->{UserLogin} -=> $UserData{UserLogin})",
         );
 
@@ -299,6 +303,7 @@ sub Run {
 
         ENTRY:
         for my $Entry ( @{ $ConfigObject->Get($Source)->{Map} } ) {
+
             # check dynamic fields
             if ( $Entry->[5] eq 'dynamic_field' ) {
 
@@ -388,6 +393,15 @@ sub Run {
                     %GetParam,
                     UserID => $Self->{UserID},
                 );
+            }
+
+            if ( $CurrentUserData{UserPassword} ne $GetParam{UserPassword} ) {
+
+                $UpdateSuccess = $CustomerUserObject->DeleteOnePreference(
+                    Key    => 'UserLastPwChangeTime',
+                    UserID => $GetParam{ID},
+                );
+
             }
 
             if ( $UpdateSuccess || $UpdateOnlyPreferences ) {
@@ -775,9 +789,9 @@ sub Run {
                     if ($URL) {
                         $Output
                             .= $LayoutObject->Notify(
-                            Data => $LayoutObject->{LanguageObject}->Translate(
-                                'Customer %s added',
-                                $UserQuote,
+                                Data => $LayoutObject->{LanguageObject}->Translate(
+                                    'Customer %s added',
+                                    $UserQuote,
                                 )
                                 . " ( $URL )!",
                             );
@@ -785,9 +799,9 @@ sub Run {
                     else {
                         $Output
                             .= $LayoutObject->Notify(
-                            Data => $LayoutObject->{LanguageObject}->Translate(
-                                'Customer %s added',
-                                $UserQuote,
+                                Data => $LayoutObject->{LanguageObject}->Translate(
+                                    'Customer %s added',
+                                    $UserQuote,
                                 )
                                 . "!",
                             );
@@ -1208,8 +1222,7 @@ sub _Edit {
 
             # make sure the encoding stamp is set
             for my $Key ( sort keys %{$SelectionsData} ) {
-                $SelectionsData->{$Key}
-                    = $Kernel::OM->Get('Kernel::System::Encode')->EncodeInput( $SelectionsData->{$Key} );
+                $SelectionsData->{$Key} = $Kernel::OM->Get('Kernel::System::Encode')->EncodeInput( $SelectionsData->{$Key} );
             }
 
             # build option string
@@ -1393,7 +1406,7 @@ sub _Edit {
             if ( $Data{ $PreferencesGroup->{Prio} } ) {
 
                 COUNT:
-                for my $Count ( 1 .. 151 ) {
+                for ( 1 .. 151 ) {
 
                     $PreferencesGroup->{Prio}++;
 

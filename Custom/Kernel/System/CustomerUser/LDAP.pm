@@ -1,11 +1,19 @@
 # --
-# Copyright (C) 2001-2021 OTRS AG, https://otrs.com/
-# Copyright (C) 2021 Znuny GmbH, https://znuny.org/
-# Copyright (C) 2021 Rother OSS GmbH, https://rother-oss.com/
+# OTOBO is a web-based ticketing system for service organisations.
 # --
-# This software comes with ABSOLUTELY NO WARRANTY. For details, see
-# the enclosed file COPYING for license information (GPL). If you
-# did not receive this file, see https://www.gnu.org/licenses/gpl-3.0.txt.
+# Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
+# Copyright (C) 2019-2021 Rother OSS GmbH, https://otobo.de/
+# --
+# $origin: otobo - d2d6be92c1665473091303dbf300e0c830d6d9be - Kernel/System/CustomerUser/LDAP.pm
+# --
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
 # --
 
 package Kernel::System::CustomerUser::LDAP;
@@ -293,7 +301,7 @@ sub CustomerName {
         if ( $Result->code() == 4 ) {
 
             # Result code 4 (LDAP_SIZELIMIT_EXCEEDED) is normal if there
-            # are more items in LDAP than search limit defined in OTRS or
+            # are more items in LDAP than search limit defined in OTOBO or
             # in LDAP server. Avoid spamming logs with such errors.
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'debug',
@@ -517,8 +525,7 @@ sub CustomerSearch {
 
     # remove dynamic field names that are configured in CustomerUserListFields
     # as they cannot be handled here
-    my @CustomerUserListFieldsWithoutDynamicFields
-        = grep { !exists $Self->{ConfiguredDynamicFieldNames}->{$_} } @{$CustomerUserListFields};
+    my @CustomerUserListFieldsWithoutDynamicFields = grep { !exists $Self->{ConfiguredDynamicFieldNames}->{$_} } @{$CustomerUserListFields};
 
     # combine needed attrs
     my @Attributes = ( @CustomerUserListFieldsWithoutDynamicFields, $Self->{CustomerKey} );
@@ -580,7 +587,7 @@ sub CustomerSearch {
         if ( $Result->code() == 4 ) {
 
             # Result code 4 (LDAP_SIZELIMIT_EXCEEDED) is normal if there
-            # are more items in LDAP than search limit defined in OTRS or
+            # are more items in LDAP than search limit defined in OTOBO or
             # in LDAP server. Avoid spamming logs with such errors.
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'debug',
@@ -596,9 +603,8 @@ sub CustomerSearch {
     }
 
     # dynamic field handling
-    my @CustomerUserListFieldsDynamicFields
-        = grep { exists $Self->{ConfiguredDynamicFieldNames}->{$_} } @{$CustomerUserListFields};
-    my %CustomerUserListFieldsDynamicFields = map { $_ => 1 } @CustomerUserListFieldsDynamicFields;
+    my @CustomerUserListFieldsDynamicFields = grep { exists $Self->{ConfiguredDynamicFieldNames}->{$_} } @{$CustomerUserListFields};
+    my %CustomerUserListFieldsDynamicFields = map  { $_ => 1 } @CustomerUserListFieldsDynamicFields;
 
     my $DynamicFieldBackendObject = $Kernel::OM->Get('Kernel::System::DynamicField::Backend');
 
@@ -948,8 +954,7 @@ sub CustomerSearchDetail {
         my @DynamicFieldUserLogins;
 
         # sql uery for the dynamic fields
-        my $SQLDynamicField
-            = "SELECT DISTINCT(df_obj_id_name.object_name) FROM dynamic_field_obj_id_name df_obj_id_name "
+        my $SQLDynamicField = "SELECT DISTINCT(df_obj_id_name.object_name) FROM dynamic_field_obj_id_name df_obj_id_name "
             . $SQLDynamicFieldFrom
             . " WHERE "
             . $SQLDynamicFieldWhere;
@@ -1290,7 +1295,7 @@ sub CustomerIDList {
         if ( $Result->code() == 4 ) {
 
             # Result code 4 (LDAP_SIZELIMIT_EXCEEDED) is normal if there
-            # are more items in LDAP than search limit defined in OTRS or
+            # are more items in LDAP than search limit defined in OTOBO or
             # in LDAP server. Avoid spamming logs with such errors.
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'debug',

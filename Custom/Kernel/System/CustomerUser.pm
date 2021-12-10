@@ -1,11 +1,19 @@
 # --
-# Copyright (C) 2001-2021 OTRS AG, https://otrs.com/
-# Copyright (C) 2021 Znuny GmbH, https://znuny.org/
-# Copyright (C) 2021 Rother OSS GmbH, https://rother-oss.com/
+# OTOBO is a web-based ticketing system for service organisations.
 # --
-# This software comes with ABSOLUTELY NO WARRANTY. For details, see
-# the enclosed file COPYING for license information (GPL). If you
-# did not receive this file, see https://www.gnu.org/licenses/gpl-3.0.txt.
+# Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
+# Copyright (C) 2019-2021 Rother OSS GmbH, https://otobo.de/
+# --
+# $origin: otobo - d2d6be92c1665473091303dbf300e0c830d6d9be - Kernel/System/CustomerUser.pm
+# --
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
 # --
 
 package Kernel::System::CustomerUser;
@@ -262,9 +270,8 @@ sub CustomerSearch {
 
                 # param PostMasterSearch
                 elsif ( defined $Param{PostMasterSearch} && length $Param{PostMasterSearch} ) {
-                    $SearchFields
-                        = $Self->{"CustomerUser$Count"}->{CustomerUserMap}->{CustomerUserPostMasterSearchFields};
-                    $SearchParam = $Param{PostMasterSearch};
+                    $SearchFields = $Self->{"CustomerUser$Count"}->{CustomerUserMap}->{CustomerUserPostMasterSearchFields};
+                    $SearchParam  = $Param{PostMasterSearch};
                 }
 
                 # search dynamic field values
@@ -358,7 +365,7 @@ sub CustomerSearch {
 
 =head2 CustomerSearchDetail()
 
-To find customer user in the system.
+To find customer users in the system.
 
 The search criteria are logically AND connected.
 When a list is passed as criteria, the individual members are OR connected.
@@ -370,7 +377,7 @@ The count of results is returned when the parameter C<Result = 'COUNT'> is passe
 
     my $CustomerUserIDsRef = $CustomerUserObject->CustomerSearchDetail(
 
-        # all search fields possible which are defined in CustomerUser::EnhancedSearchFields
+        # all fields which are defined in a CustomerUserMap, except password fields, are searchable
         UserLogin     => 'example*',                                    # (optional)
         UserFirstname => 'Firstn*',                                     # (optional)
 
@@ -398,8 +405,7 @@ The count of results is returned when the parameter C<Result = 'COUNT'> is passe
         OrderBy => [ 'UserLogin', 'UserCustomerID' ],                   # (optional)
         # ignored if the result type is 'COUNT'
         # default: [ 'UserLogin' ]
-        # (all search fields possible which are defined in
-        CustomerUser::EnhancedSearchFields)
+        # (all fields which are defined in a CustomerUserMap can be used for ordering)
 
         # Additional information for OrderBy:
         # The OrderByDirection can be specified for each OrderBy attribute.
@@ -621,7 +627,7 @@ sub CustomerUserSearchFields {
             next ENTRY if $SearchFieldsExists{$SearchFieldName};
             next ENTRY if $SearchFieldName =~ m{(Password|Pw)\d*$}smxi;
 
-            # Remeber the already collected search field name.
+            # Remember the already collected search field name.
             $SearchFieldsExists{$SearchFieldName} = 1;
 
             my %FieldConfig = $Self->GetFieldConfig(
@@ -629,7 +635,7 @@ sub CustomerUserSearchFields {
                 Source    => $Param{Source},     # to get the right database field for the given source
             );
 
-            next ENTRY if !%FieldConfig;
+            next SEARCHFIELDNAME if !%FieldConfig;
 
             my %SearchFieldData = (
                 %FieldConfig,
@@ -838,7 +844,6 @@ sub CustomerName {
 
         # Get customer name and return it.
         my $Name = $Self->{"CustomerUser$Count"}->CustomerName(%Param);
-
         if ($Name) {
             return $Name;
         }
@@ -1088,8 +1093,7 @@ sub CustomerUserAdd {
         if (%User) {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'error',
-                Message  => $Kernel::OM->Get('Kernel::Language')
-                    ->Translate( 'Customer user "%s" already exists.', $Param{UserLogin} ),
+                Message  => $Kernel::OM->Get('Kernel::Language')->Translate( 'Customer user "%s" already exists.', $Param{UserLogin} ),
             );
             return;
         }
@@ -1176,8 +1180,7 @@ sub CustomerUserUpdate {
         if (%User) {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'error',
-                Message  => $Kernel::OM->Get('Kernel::Language')
-                    ->Translate( 'Customer user "%s" already exists.', $Param{UserLogin} ),
+                Message  => $Kernel::OM->Get('Kernel::Language')->Translate( 'Customer user "%s" already exists.', $Param{UserLogin} ),
             );
             return;
         }
@@ -1731,6 +1734,48 @@ sub CustomerUserCustomerMemberList {
     }
 }
 
+=head2 DeleteOnePreference()
+
+get customer user preferences
+
+    my %Preferences = $CustomerUserObject->DeleteOnePreference(
+        UserID => 'some-login',
+        Key    => 'PreferenceKey',
+    );
+
+=cut
+
+sub DeleteOnePreference {
+    my ( $Self, %Param ) = @_;
+
+    # check needed stuff
+    if ( !$Param{UserID} ) {
+        $Kernel::OM->Get('Kernel::System::Log')->Log(
+            Priority => 'error',
+            Message  => 'Need UserID!'
+        );
+        return;
+    }
+
+    # check if user exists
+    my %User = $Self->CustomerUserDataGet( User => $Param{UserID} );
+    if ( !%User ) {
+        $Kernel::OM->Get('Kernel::System::Log')->Log(
+            Priority => 'error',
+            Message  => "No such user '$Param{UserID}'!",
+        );
+        return;
+    }
+
+    # call new api (2.4.8 and higher)
+    if ( $Self->{ $User{Source} }->can('DeleteOnePreference') ) {
+        return $Self->{ $User{Source} }->DeleteOnePreference(%Param);
+    }
+
+    # call old api
+    return $Self->{PreferencesObject}->DeleteOnePreference(%Param);
+}
+
 sub DESTROY {
     my $Self = shift;
 
@@ -1741,13 +1786,3 @@ sub DESTROY {
 }
 
 1;
-
-=head1 TERMS AND CONDITIONS
-
-This software is part of the OTRS project (L<https://otrs.org/>).
-
-This software comes with ABSOLUTELY NO WARRANTY. For details, see
-the enclosed file COPYING for license information (GPL). If you
-did not receive this file, see L<https://www.gnu.org/licenses/gpl-3.0.txt>.
-
-=cut

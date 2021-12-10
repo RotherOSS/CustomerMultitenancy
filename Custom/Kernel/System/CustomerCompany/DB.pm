@@ -1,11 +1,19 @@
 # --
-# Copyright (C) 2001-2021 OTRS AG, https://otrs.com/
-# Copyright (C) 2021 Znuny GmbH, https://znuny.org/
-# Copyright (C) 2021 Rother OSS GmbH, https://rother-oss.com/
+# OTOBO is a web-based ticketing system for service organisations.
 # --
-# This software comes with ABSOLUTELY NO WARRANTY. For details, see
-# the enclosed file COPYING for license information (GPL). If you
-# did not receive this file, see https://www.gnu.org/licenses/gpl-3.0.txt.
+# Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
+# Copyright (C) 2019-2021 Rother OSS GmbH, https://otobo.de/
+# --
+# $origin: otobo - b1c1ab35d59104476ebde772a12c7f3cd36e5211 - Kernel/System/CustomerCompany/DB.pm
+# --
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
 # --
 
 package Kernel::System::CustomerCompany::DB;
@@ -75,7 +83,7 @@ sub new {
     }
 
     # this setting specifies if the table has the create_time,
-    # create_by, change_time and change_by fields of OTRS
+    # create_by, change_time and change_by fields of OTOBO
     $Self->{ForeignDB} = $Self->{CustomerCompanyMap}->{Params}->{ForeignDB} ? 1 : 0;
 
     # defines if the database search will be performend case sensitive (1) or not (0)
@@ -135,6 +143,7 @@ sub CustomerCompanyList {
 
     # check cache
     if ( $Self->{CacheObject} ) {
+
         $CacheType = $Self->{CacheType} . '_CustomerCompanyList';
         $CacheKey  = "CustomerCompanyList::${Valid}::${Limit}::" . ( $Param{Search} || '' );
         # ---
@@ -158,8 +167,7 @@ sub CustomerCompanyList {
 
     # remove dynamic field names that are configured in CustomerCompanyListFields
     # as they cannot be handled here
-    my @CustomerCompanyListFieldsWithoutDynamicFields
-        = grep { !exists $Self->{ConfiguredDynamicFieldNames}->{$_} } @{$CustomerCompanyListFields};
+    my @CustomerCompanyListFieldsWithoutDynamicFields = grep { !exists $Self->{ConfiguredDynamicFieldNames}->{$_} } @{$CustomerCompanyListFields};
 
     # what is the result
     my $What = join(
@@ -263,8 +271,7 @@ sub CustomerCompanyList {
     );
     my %DynamicFieldConfigsByName = map { $_->{Name} => $_ } @{$DynamicFieldConfigs};
 
-    my @CustomerCompanyListFieldsDynamicFields
-        = grep { exists $Self->{ConfiguredDynamicFieldNames}->{$_} } @{$CustomerCompanyListFields};
+    my @CustomerCompanyListFieldsDynamicFields = grep { exists $Self->{ConfiguredDynamicFieldNames}->{$_} } @{$CustomerCompanyListFields};
 
     # sql
     my $CompleteSQL = "SELECT $Self->{CustomerCompanyKey}, $What FROM $Self->{CustomerCompanyTable}";
@@ -582,8 +589,7 @@ sub CustomerCompanySearchDetail {
         my @DynamicFieldCustomerIDs;
 
         # Sql uery for the dynamic fields.
-        my $SQLDynamicField
-            = "SELECT DISTINCT(df_obj_id_name.object_name) FROM dynamic_field_obj_id_name df_obj_id_name "
+        my $SQLDynamicField = "SELECT DISTINCT(df_obj_id_name.object_name) FROM dynamic_field_obj_id_name df_obj_id_name "
             . $SQLDynamicFieldFrom
             . " WHERE "
             . $SQLDynamicFieldWhere;
@@ -968,7 +974,7 @@ sub CustomerCompanyAdd {
     # log notice
     $Kernel::OM->Get('Kernel::System::Log')->Log(
         Priority => 'info',
-        Message =>
+        Message  =>
             "CustomerCompany: '$Param{CustomerCompanyName}/$Param{CustomerID}' created successfully ($Param{UserID})!",
     );
 
@@ -1041,7 +1047,7 @@ sub CustomerCompanyUpdate {
     # log notice
     $Kernel::OM->Get('Kernel::System::Log')->Log(
         Priority => 'info',
-        Message =>
+        Message  =>
             "CustomerCompany: '$Param{CustomerCompanyName}/$Param{CustomerID}' updated successfully ($Param{UserID})!",
     );
 

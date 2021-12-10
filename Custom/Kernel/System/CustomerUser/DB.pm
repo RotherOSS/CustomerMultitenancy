@@ -1,11 +1,19 @@
 # --
-# Copyright (C) 2001-2021 OTRS AG, https://otrs.com/
-# Copyright (C) 2021 Znuny GmbH, https://znuny.org/
-# Copyright (C) 2021 Rother OSS GmbH, https://rother-oss.com/
+# OTOBO is a web-based ticketing system for service organisations.
 # --
-# This software comes with ABSOLUTELY NO WARRANTY. For details, see
-# the enclosed file COPYING for license information (GPL). If you
-# did not receive this file, see https://www.gnu.org/licenses/gpl-3.0.txt.
+# Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
+# Copyright (C) 2019-2021 Rother OSS GmbH, https://otobo.de/
+# --
+# $origin: otobo - b1c1ab35d59104476ebde772a12c7f3cd36e5211 - Kernel/System/CustomerUser/DB.pm
+# --
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
 # --
 
 package Kernel::System::CustomerUser::DB;
@@ -17,6 +25,8 @@ use Kernel::System::VariableCheck qw(:all);
 
 use Crypt::PasswdMD5 qw(unix_md5_crypt apache_md5_crypt);
 use Digest::SHA;
+
+use Kernel::System::VariableCheck qw(:all);
 
 our @ObjectDependencies = (
     'Kernel::Config',
@@ -31,6 +41,8 @@ our @ObjectDependencies = (
     'Kernel::System::Log',
     'Kernel::System::Main',
     'Kernel::System::Valid',
+    'Kernel::System::DynamicField',
+    'Kernel::System::DynamicField::Backend',
     'Kernel::System::DynamicFieldValueObjectName',
 );
 
@@ -103,7 +115,7 @@ sub new {
     }
 
     # this setting specifies if the table has the create_time,
-    # create_by, change_time and change_by fields of OTRS
+    # create_by, change_time and change_by fields of OTOBO
     $Self->{ForeignDB} = $Self->{CustomerUserMap}->{Params}->{ForeignDB} ? 1 : 0;
 
     # defines if the database search will be performend case sensitive (1) or not (0)
@@ -175,8 +187,7 @@ sub CustomerName {
 
     # remove dynamic field names that are configured in CustomerUserNameFields
     # as they cannot be handled here
-    my @CustomerUserNameFieldsWithoutDynamicFields
-        = grep { !exists $Self->{ConfiguredDynamicFieldNames}->{$_} } @{$CustomerUserNameFields};
+    my @CustomerUserNameFieldsWithoutDynamicFields = grep { !exists $Self->{ConfiguredDynamicFieldNames}->{$_} } @{$CustomerUserNameFields};
 
     # build SQL string 1/2
     my $SQL = "SELECT ";
@@ -211,8 +222,7 @@ sub CustomerName {
     }
 
     # fetch dynamic field values, if configured
-    my @DynamicFieldCustomerUserNameFields
-        = grep { exists $Self->{ConfiguredDynamicFieldNames}->{$_} } @{$CustomerUserNameFields};
+    my @DynamicFieldCustomerUserNameFields = grep { exists $Self->{ConfiguredDynamicFieldNames}->{$_} } @{$CustomerUserNameFields};
     if (@DynamicFieldCustomerUserNameFields) {
         my $DynamicFieldBackendObject = $Kernel::OM->Get('Kernel::System::DynamicField::Backend');
 
@@ -326,8 +336,7 @@ sub CustomerSearch {
 
     # remove dynamic field names that are configured in CustomerUserListFields
     # as they cannot be handled here
-    my @CustomerUserListFieldsWithoutDynamicFields
-        = grep { !exists $Self->{ConfiguredDynamicFieldNames}->{$_} } @{$CustomerUserListFields};
+    my @CustomerUserListFieldsWithoutDynamicFields = grep { !exists $Self->{ConfiguredDynamicFieldNames}->{$_} } @{$CustomerUserListFields};
 
     # build SQL string 1/2
     my $SQL = "SELECT $Self->{CustomerKey} ";
@@ -343,7 +352,7 @@ sub CustomerSearch {
         if ( !$Self->{CustomerUserMap}->{CustomerUserSearchFields} ) {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'error',
-                Message =>
+                Message  =>
                     "Need CustomerUserSearchFields in CustomerUser config, unable to search for '$Param{Search}'!",
             );
             return;
@@ -530,8 +539,7 @@ sub CustomerSearch {
     );
     my %DynamicFieldConfigsByName = map { $_->{Name} => $_ } @{$DynamicFieldConfigs};
 
-    my @CustomerUserListFieldsDynamicFields
-        = grep { exists $Self->{ConfiguredDynamicFieldNames}->{$_} } @{$CustomerUserListFields};
+    my @CustomerUserListFieldsDynamicFields = grep { exists $Self->{ConfiguredDynamicFieldNames}->{$_} } @{$CustomerUserListFields};
 
     # get data from customer user table
     return if !$Self->{DBObject}->Prepare(
@@ -637,7 +645,6 @@ sub CustomerSearch {
             TTL   => $Self->{CustomerUserMap}->{CacheTTL},
         );
     }
-
     return %Users;
 }
 
@@ -839,8 +846,7 @@ sub CustomerSearchDetail {
 
         my @DynamicFieldUserLogins;
 
-        my $SQLDynamicField
-            = "SELECT DISTINCT(df_obj_id_name.object_name) FROM dynamic_field_obj_id_name df_obj_id_name "
+        my $SQLDynamicField = "SELECT DISTINCT(df_obj_id_name.object_name) FROM dynamic_field_obj_id_name df_obj_id_name "
             . $SQLDynamicFieldFrom
             . " WHERE "
             . $SQLDynamicFieldWhere;
@@ -1480,8 +1486,7 @@ sub CustomerUserAdd {
         if (%Result) {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'error',
-                Message  => $Kernel::OM->Get('Kernel::Language')
-                    ->Translate('This email address is already in use for another customer user.'),
+                Message  => $Kernel::OM->Get('Kernel::Language')->Translate('This email address is already in use for another customer user.'),
             );
             return;
         }
@@ -1658,8 +1663,7 @@ sub CustomerUserUpdate {
         if (%Result) {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'error',
-                Message  => $Kernel::OM->Get('Kernel::Language')
-                    ->Translate('This email address is already in use for another customer user.'),
+                Message  => $Kernel::OM->Get('Kernel::Language')->Translate('This email address is already in use for another customer user.'),
             );
             return;
         }
@@ -1853,7 +1857,7 @@ sub SetPassword {
         if ( !$MainObject->Require('Crypt::Eksblowfish::Bcrypt') ) {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'error',
-                Message =>
+                Message  =>
                     "CustomerUser: '$Login' tried to store password with bcrypt but 'Crypt::Eksblowfish::Bcrypt' is not installed!",
             );
             return;

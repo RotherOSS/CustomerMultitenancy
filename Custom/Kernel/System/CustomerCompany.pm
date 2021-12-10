@@ -1,11 +1,19 @@
 # --
-# Copyright (C) 2001-2021 OTRS AG, https://otrs.com/
-# Copyright (C) 2021 Znuny GmbH, https://znuny.org/
-# Copyright (C) 2021 Rother OSS GmbH, https://rother-oss.com/
+# OTOBO is a web-based ticketing system for service organisations.
 # --
-# This software comes with ABSOLUTELY NO WARRANTY. For details, see
-# the enclosed file COPYING for license information (GPL). If you
-# did not receive this file, see https://www.gnu.org/licenses/gpl-3.0.txt.
+# Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
+# Copyright (C) 2019-2021 Rother OSS GmbH, https://otobo.de/
+# --
+# $origin: otobo - d2d6be92c1665473091303dbf300e0c830d6d9be - Kernel/System/CustomerCompany.pm
+# --
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
 # --
 
 package Kernel::System::CustomerCompany;
@@ -155,11 +163,11 @@ sub CustomerCompanyAdd {
     }
 
     # check needed stuff
-    for my $Needed (qw(CustomerID UserID)) {
-        if ( !$Param{$Needed} ) {
+    for (qw(CustomerID UserID)) {
+        if ( !$Param{$_} ) {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'error',
-                Message  => "Need $Needed!"
+                Message  => "Need $_!"
             );
             return;
         }
@@ -388,7 +396,6 @@ sub CustomerCompanyUpdate {
         },
         UserID => $Param{UserID},
     );
-
     return $Result;
 }
 
@@ -496,9 +503,8 @@ sub CustomerCompanyList {
 
                 # param Search
                 if ( defined $Param{Search} && length $Param{Search} ) {
-                    $SearchFields
-                        = $Self->{"CustomerCompany$Count"}->{CustomerCompanyMap}->{CustomerCompanySearchFields};
-                    $SearchParam = $Param{Search};
+                    $SearchFields = $Self->{"CustomerCompany$Count"}->{CustomerCompanyMap}->{CustomerCompanySearchFields};
+                    $SearchParam  = $Param{Search};
                 }
 
                 # search dynamic field values
@@ -595,7 +601,7 @@ The count of results is returned when the parameter C<Result = 'COUNT'> is passe
 
     my $CustomerCompanyIDsRef = $CustomerCompanyObject->CustomerCompanySearchDetail(
 
-        # all search fields possible which are defined in CustomerCompany::EnhancedSearchFields
+        # all fields in a CustomerCompanyMap are searchable
         CustomerID          => 'example*',                                  # (optional)
         CustomerCompanyName => 'Name*',                                     # (optional)
 
@@ -619,8 +625,7 @@ The count of results is returned when the parameter C<Result = 'COUNT'> is passe
         OrderBy => [ 'CustomerID', 'CustomerCompanyCountry' ],              # (optional)
         # ignored if the result type is 'COUNT'
         # default: [ 'CustomerID' ]
-        # (all search fields possible which are defined in
-        CustomerCompany::EnhancedSearchFields)
+        # (all fields which are in a CustomerCompanyMap can be used for ordering)
 
         # Additional information for OrderBy:
         # The OrderByDirection can be specified for each OrderBy attribute.
@@ -746,12 +751,10 @@ sub CustomerCompanySearchDetail {
             }
 
             if ( IsArrayRefWithData( $Param{OrderByDirection} ) && $Param{OrderByDirection}->[0] eq 'Up' ) {
-                @CustomerCompanyataList
-                    = sort { lc( $a->{$OrderBy} ) cmp lc( $b->{$OrderBy} ) } @CustomerCompanyataList;
+                @CustomerCompanyataList = sort { lc( $a->{$OrderBy} ) cmp lc( $b->{$OrderBy} ) } @CustomerCompanyataList;
             }
             else {
-                @CustomerCompanyataList
-                    = sort { lc( $b->{$OrderBy} ) cmp lc( $a->{$OrderBy} ) } @CustomerCompanyataList;
+                @CustomerCompanyataList = sort { lc( $b->{$OrderBy} ) cmp lc( $a->{$OrderBy} ) } @CustomerCompanyataList;
             }
 
             if ( $Param{Limit} && scalar @CustomerCompanyataList > $Param{Limit} ) {
@@ -830,7 +833,7 @@ sub CustomerCompanySearchFields {
                 Source    => $Param{Source},     # to get the right database field for the given source
             );
 
-            next ENTRY if !%FieldConfig;
+            next SEARCHFIELDNAME if !%FieldConfig;
 
             my %SearchFieldData = (
                 %FieldConfig,
@@ -983,13 +986,3 @@ sub DESTROY {
 }
 
 1;
-
-=head1 TERMS AND CONDITIONS
-
-This software is part of the OTRS project (L<https://otrs.org/>).
-
-This software comes with ABSOLUTELY NO WARRANTY. For details, see
-the enclosed file COPYING for license information (GPL). If you
-did not receive this file, see L<https://www.gnu.org/licenses/gpl-3.0.txt>.
-
-=cut
