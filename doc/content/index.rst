@@ -7,11 +7,11 @@ Sacrifice to Sphinx
 
 Description
 ===========
-This package allows group based restrictions on customer and customer user information for agents. Per default all customers are visible for agents. After installation of this package customers can be assigned to an agent group. Those customers are then only visible only for agents with access rights on the specific group. Also complete customer sources can be restricted.
+This package allows group based restrictions on customer and customer user information for agents. Per default all customers are visible for agents. After installation of this package customers can be assigned to an agent group. Those customers are then visible only for agents with access rights to the specific group. Also complete customer sources can be restricted.
 
 Access rights on customer users will be inherited by the rights set on the customers, but can also individually be set.
 
-This functionality works for the customer (user) tables of OTOBO, and read only for remote data bases as well as LDAP.
+This functionality works for the customer (user) tables of OTOBO, and read only for remote databases as well as LDAP.
 
 System requirements
 ===================
@@ -47,7 +47,8 @@ For the DB backend in both the CustomerCompany and CustomerUser definitions this
         # ...
         Map => [
             # ...
-            [ 'UserGroupID',      Translatable('Only visible to agents in group'), 'group_id',    0, 0, 'var', '', 0, undef, undef ],
+            [ 'UserGroupID',      Translatable('Only visible to agents in group'),
+                'group_id',    0, 0, 'var', '', 0, undef, undef ],
             # ...
         ],
     };
@@ -64,7 +65,8 @@ For the LDAP backend in both the CustomerCompany and CustomerUser definitions th
 
         Map => [
             # ...
-            [ 'UserGroupID',      Translatable('Only visible to agents in group'), 'otoboGroup',    0, 0, 'var', '', 0, undef, undef ],
+            [ 'UserGroupID',      Translatable('Only visible to agents in group'),
+                'otoboGroup',    0, 0, 'var', '', 0, undef, undef ],
             # ...
         ],
     };
@@ -80,7 +82,9 @@ For the LDAP backend in both the CustomerCompany and CustomerUser definitions th
         UserGroupIDSync => {
             # Match group names instead of group IDs.
             UseGroupNames => 1,
-            # Remap group names or IDs. The key is the group name/ID on the remote system (DB or LDAP-Attribute) and the value is the group name/ID on the local system.
+            # Remap group names or IDs.
+            # The key is the group name/ID on the remote system (DB or LDAP-Attribute)
+            # and the value is the group name/ID on the local system.
             RemoteGroupToLocalGroup => {
                 'ad-admin-group' => 'admin',
                 'ad-user-group'  => 'users',
