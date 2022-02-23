@@ -2,9 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2021 Rother OSS GmbH, https://otobo.de/
+# Copyright (C) 2019-2022 Rother OSS GmbH, https://otobo.de/
 # --
-# $origin: otobo - 866ca7d0103f52a61cedf7c5b10cac6b9cb56991 - Kernel/Modules/AdminCustomerCompany.pm
+# $origin: otobo - 5e256046cf5064b5b57a5b05d32f47999798ae19 - Kernel/Modules/AdminCustomerCompany.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -21,11 +21,16 @@ package Kernel::Modules::AdminCustomerCompany;
 use strict;
 use warnings;
 
+# core modules
+use List::Util qw(any);
+
+# CPAN modules
+
+# OTOBO modules
 use Kernel::Language qw(Translatable);
+use Kernel::System::VariableCheck qw(:all);
 
 our $ObjectManagerDisabled = 1;
-
-use Kernel::System::VariableCheck qw(:all);
 
 sub new {
     my ( $Type, %Param ) = @_;
@@ -119,15 +124,26 @@ sub Run {
         # challenge token check for write action
         $LayoutObject->ChallengeTokenCheck();
 
-        my $Note = '';
         my %Errors;
         $GetParam{CustomerCompanyID} = $ParamObject->GetParam( Param => 'CustomerCompanyID' );
+
+        my @CustomerCompanyMap = $ConfigObject->Get( $GetParam{Source} )->{Map}->@*;
+
+        # The readonly fields should not be settable from the WebApp.
+        # So update with the old values, regardless what was passed from the client.
+        # The old data is only needed when there are any readonly fields.
+        my %OldData;
+        if ( any { $_->[7] } @CustomerCompanyMap ) {
+            %OldData = $CustomerCompanyObject->CustomerCompanyGet(
+                CustomerID => $GetParam{CustomerCompanyID},
+            );
+        }
 
         # Get dynamic field backend object.
         my $DynamicFieldBackendObject = $Kernel::OM->Get('Kernel::System::DynamicField::Backend');
 
         ENTRY:
-        for my $Entry ( @{ $ConfigObject->Get( $GetParam{Source} )->{Map} } ) {
+        for my $Entry (@CustomerCompanyMap) {
 
             # check dynamic fields
             if ( $Entry->[5] eq 'dynamic_field' ) {
@@ -160,6 +176,11 @@ sub Run {
                         LayoutObject       => $LayoutObject,
                     );
                 }
+            }
+
+            # reuse the old data for readonly field
+            elsif ( $Entry->[7] ) {
+                $GetParam{ $Entry->[0] } = $OldData{ $Entry->[0] };
             }
 
             # check remaining non-dynamic-field mandatory fields
@@ -204,7 +225,7 @@ sub Run {
                 my $DynamicFieldObject = $Kernel::OM->Get('Kernel::System::DynamicField');
 
                 ENTRY:
-                for my $Entry ( @{ $ConfigObject->Get( $GetParam{Source} )->{Map} } ) {
+                for my $Entry (@CustomerCompanyMap) {
                     next ENTRY if $Entry->[5] ne 'dynamic_field';
 
                     my $DynamicFieldConfig = $Self->{DynamicFieldLookup}->{ $Entry->[2] };
@@ -352,7 +373,6 @@ sub Run {
         # challenge token check for write action
         $LayoutObject->ChallengeTokenCheck();
 
-        my $Note = '';
         my %Errors;
 
         my $CustomerCompanyKey = $ConfigObject->Get( $GetParam{Source} )->{CustomerCompanyKey};
@@ -829,18 +849,21 @@ sub _Overview {
         # get config object
         my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
 
-        # same Limit as $Self->{CustomerCompanyMap}->{'CustomerCompanySearchListLimit'}
+        # same Limit as $Self->{CustomerCompany}->{CustomerCompanySearchListLimit}
         # smallest Limit from all sources
-        my $Limit = 400;
+        my $Limit;
         SOURCE:
         for my $Count ( '', 1 .. 10 ) {
             next SOURCE if !$ConfigObject->Get("CustomerCompany$Count");
             my $CustomerUserMap = $ConfigObject->Get("CustomerCompany$Count");
             next SOURCE if !$CustomerUserMap->{CustomerCompanySearchListLimit};
-            if ( $CustomerUserMap->{CustomerCompanySearchListLimit} < $Limit ) {
+            if ( !defined $Limit || $CustomerUserMap->{CustomerCompanySearchListLimit} < $Limit ) {
                 $Limit = $CustomerUserMap->{CustomerCompanySearchListLimit};
             }
         }
+
+        # as fallback take the hardcoded limit of Kernel/System/CustomerCompany/DB.pm
+        $Limit //= 50000;
 
         my %ListAllItems = $CustomerCompanyObject->CustomerCompanyList(
             Search => $Param{Search},

@@ -2,9 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2021 Rother OSS GmbH, https://otobo.de/
+# Copyright (C) 2019-2022 Rother OSS GmbH, https://otobo.de/
 # --
-# $origin: otobo - 866ca7d0103f52a61cedf7c5b10cac6b9cb56991 - Kernel/Modules/AdminCustomerUser.pm
+# $origin: otobo - 5e256046cf5064b5b57a5b05d32f47999798ae19 - Kernel/Modules/AdminCustomerUser.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -925,16 +925,19 @@ sub _Overview {
 
         # same Limit as $Self->{CustomerUserMap}->{CustomerUserSearchListLimit}
         # smallest Limit from all sources
-        my $Limit = 400;
+        my $Limit;
         SOURCE:
         for my $Count ( '', 1 .. 10 ) {
             next SOURCE if !$ConfigObject->Get("CustomerUser$Count");
             my $CustomerUserMap = $ConfigObject->Get("CustomerUser$Count");
             next SOURCE if !$CustomerUserMap->{CustomerUserSearchListLimit};
-            if ( $CustomerUserMap->{CustomerUserSearchListLimit} < $Limit ) {
+            if ( !defined $Limit || $CustomerUserMap->{CustomerUserSearchListLimit} < $Limit ) {
                 $Limit = $CustomerUserMap->{CustomerUserSearchListLimit};
             }
         }
+
+        # as fallback take the hardcoded limit of Kernel/System/CustomerUser/DB.pm
+        $Limit //= 250;
 
         my %ListAllItems = $CustomerUserObject->CustomerSearch(
             Search => $Param{Search},

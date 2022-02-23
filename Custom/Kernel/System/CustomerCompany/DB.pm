@@ -2,9 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2021 Rother OSS GmbH, https://otobo.de/
+# Copyright (C) 2019-2022 Rother OSS GmbH, https://otobo.de/
 # --
-# $origin: otobo - b1c1ab35d59104476ebde772a12c7f3cd36e5211 - Kernel/System/CustomerCompany/DB.pm
+# $origin: otobo - e894aef610208fdc401a4df814ca59658292fbba - Kernel/System/CustomerCompany/DB.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -996,29 +996,28 @@ sub CustomerCompanyUpdate {
     }
 
     # check needed stuff
-    for my $Entry ( @{ $Self->{CustomerCompanyMap}->{Map} } ) {
-        if (
-            !$Param{ $Entry->[0] }
-            && $Entry->[5] ne 'dynamic_field'    # ignore dynamic fields here
-            && $Entry->[4]
-            && $Entry->[0] ne 'UserPassword'
-            )
-        {
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'error',
-                Message  => "Need $Entry->[0]!"
-            );
-            return;
-        }
-    }
-
-    my @Fields;
-    my @Values;
-
     FIELD:
     for my $Entry ( @{ $Self->{CustomerCompanyMap}->{Map} } ) {
-        next FIELD if $Entry->[0] =~ /^UserPassword$/i;
-        next FIELD if $Entry->[5] eq 'dynamic_field';     # skip dynamic fields
+        next FIELD if $Param{ $Entry->[0] };             # worry only about empty fields, '0' is considered as being empty
+        next FIELD if $Entry->[5] eq 'dynamic_field';    # do not complain about missing dynamic fields
+        next FIELD if !$Entry->[4];                      # complain only about missing required fields
+        next FIELD if $Entry->[0] eq 'UserPassword';     # do not complain about missing password field
+
+        $Kernel::OM->Get('Kernel::System::Log')->Log(
+            Priority => 'error',
+            Message  => "Need $Entry->[0]!"
+        );
+
+        return;
+    }
+
+    # Collect the info needed for the SQL UPDATE statement
+    # The readonly flag is not honored here.
+    my ( @Fields, @Values );
+    FIELD:
+    for my $Entry ( @{ $Self->{CustomerCompanyMap}->{Map} } ) {
+        next FIELD if $Entry->[0] =~ m/^UserPassword$/i;    # skip the password field
+        next FIELD if $Entry->[5] eq 'dynamic_field';       # skip dynamic fields
         push @Fields, $Entry->[2] . ' = ?';
         push @Values, \$Param{ $Entry->[0] };
     }
