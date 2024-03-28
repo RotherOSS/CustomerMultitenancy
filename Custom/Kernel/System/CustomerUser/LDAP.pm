@@ -34,6 +34,9 @@ our @ObjectDependencies = (
     'Kernel::System::DynamicField',
     'Kernel::System::DynamicField::Backend',
     'Kernel::System::Encode',
+# Rother OSS / CustomerMultitenancy
+    'Kernel::System::Group',
+# EO Rother OSS
     'Kernel::System::Log',
     'Kernel::System::Main',
 );
@@ -581,7 +584,7 @@ sub CustomerSearch {
             my $AdditionalFilter = "(|(!($GroupIDAttr=*))";
             for my $UserGroup (@UserGroups) {
                 $AdditionalFilter .= "($GroupIDAttr=$UserGroup)";
-            } 
+            }
             $AdditionalFilter .= '))';
 
             # Remove the last closing parenthesis and add the custom filter to the search.

@@ -25,9 +25,15 @@ use Kernel::System::VariableCheck qw(:all);
 
 our @ObjectDependencies = (
     'Kernel::System::Cache',
+# Rother OSS / CustomerMultitenancy
+    'Kernel::Config',
+# EO Rother OSS
     'Kernel::System::DB',
     'Kernel::System::DynamicField',
     'Kernel::System::DynamicField::Backend',
+# Rother OSS / CustomerMultitenancy
+    'Kernel::System::Group',
+# EO Rother OSS
     'Kernel::System::Log',
     'Kernel::System::Valid',
 );

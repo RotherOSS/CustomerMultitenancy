@@ -42,6 +42,9 @@ our @ObjectDependencies = (
     'Kernel::System::DynamicField',
     'Kernel::System::DynamicField::Backend',
     'Kernel::System::Encode',
+# Rother OSS / CustomerMultitenancy
+    'Kernel::System::Group',
+# EO Rother OSS
     'Kernel::System::Log',
     'Kernel::System::Main',
     'Kernel::System::Valid',

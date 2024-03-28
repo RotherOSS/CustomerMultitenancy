@@ -39,10 +39,14 @@ our @ObjectDependencies = (
     'Kernel::System::DynamicField',
     'Kernel::System::DynamicField::Backend',
     'Kernel::System::Encode',
-    'Kernel::System::Group',  # RotherOSS:
+# Rother OSS / CustomerMultitenancy
+    'Kernel::System::Group',
+# EO Rother OSS
     'Kernel::System::Log',
     'Kernel::System::Main',
-    'Kernel::System::User',  # RotherOSS:
+# Rother OSS / CustomerMultitenancy
+    'Kernel::System::User',
+# EO Rother OSS
     'Kernel::System::Valid',
 );
 
@@ -128,7 +132,7 @@ sub new {
 
         # The user does not have permission to get information from this source.
         if ( $Self->{Multitenancy} && $CustomerUserGroup ) {
-            if ( !grep( /^$CustomerUserGroup$/, @{ $Self->{UserGroups} } ) ) {
+            if ( !grep { $_ =~ /^$CustomerUserGroup$/ } @{ $Self->{UserGroups} } ) {
                 next SOURCE;
             }
         }
@@ -346,10 +350,11 @@ sub CustomerSearch {
     }
 
 # ---
-# RotherOSS: Check if the user has permission to see this customer user. 
+# RotherOSS: Check if the user has permission to see this customer user.
 # TODO: Remove this if the DB/LDAP function CustomerSearch is fully implemented.
 # ---
     if ( $Self->{Multitenancy} ) {
+        CUSTOMERLOGIN:
         for my $CustomerUserLogin ( keys %Data ) {
             my %UserData = $Self->CustomerUserDataGet(
                 User => $CustomerUserLogin,
@@ -357,7 +362,7 @@ sub CustomerSearch {
 
             if ( !%UserData ) {
                 delete $Data{$CustomerUserLogin};
-                next;
+                next CUSTOMERLOGIN;
             }
         }
     }
@@ -564,7 +569,7 @@ sub CustomerSearchDetail {
                 );
 
                 if (%UserData) {
-                    push @IDs, $ID; 
+                    push @IDs, $ID;
                 }
             }
         }
@@ -1044,11 +1049,11 @@ sub CustomerUserDataGet {
             }
 
             # Check if any limits are set.
-            if ( $Self->{Multitenancy} && !grep( /^$Customer{UserGroupID}$/, @{ $Self->{UserGroupIDs} } ) ) {
+            if ( $Self->{Multitenancy} && !grep { $_ =~ /^$Customer{UserGroupID}$/ } @{ $Self->{UserGroupIDs} } ) {
                 # The user does not have access to this information.
                 return;
             }
-        } 
+        }
         # If there are no group settings, check if permission on customer company is permitted.
         elsif ( $Self->{Multitenancy} && !$Customer{UserGroupID} && ( !%Company || !$Company{CustomerID} ) ) {
             return;

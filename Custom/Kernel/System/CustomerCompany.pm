@@ -30,7 +30,9 @@ our @ObjectDependencies = (
     'Kernel::System::DynamicField',
     'Kernel::System::DynamicField::Backend',
     'Kernel::System::Encode',
-    'Kernel::System::Group',  # RotherOSS:
+# Rother OSS / CustomerMultitenancy
+    'Kernel::System::Group',
+# EO Rother OSS
     'Kernel::System::Log',
     'Kernel::System::Main',
     'Kernel::System::ReferenceData',
@@ -106,7 +108,7 @@ sub new {
 
         # The user does not have permission to get information from this source.
         if ( $Self->{Multitenancy} && $CustomerCompanyUserGroup ) {
-            if ( !grep( /^$CustomerCompanyUserGroup$/, @{ $Self->{UserGroups} } ) ) {
+            if ( !grep { $_ =~ /^$CustomerCompanyUserGroup$/ } @{ $Self->{UserGroups} } ) {
                 next SOURCE;
             }
         }
@@ -294,7 +296,7 @@ sub CustomerCompanyGet {
 
         if ( $Self->{Multitenancy} && $Company{UserGroupID} ) {
             # Check if the user has permission to access the information.
-            if ( !grep( /^$Company{UserGroupID}$/, @{ $Self->{UserGroupIDs} } ) ) {
+            if ( !grep { $_ =~ /^$Company{UserGroupID}$/ } @{ $Self->{UserGroupIDs} } ) {
                 return;
             }
         }
