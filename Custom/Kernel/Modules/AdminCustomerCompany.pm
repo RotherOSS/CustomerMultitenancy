@@ -2,9 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2022 Rother OSS GmbH, https://otobo.de/
+# Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.de/
 # --
-# $origin: otobo - 5e256046cf5064b5b57a5b05d32f47999798ae19 - Kernel/Modules/AdminCustomerCompany.pm
+# $origin: otobo - b4b7c6ba6617aeb4cd9e844905217331dbf2c8b5 - Kernel/Modules/AdminCustomerCompany.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -18,8 +18,10 @@
 
 package Kernel::Modules::AdminCustomerCompany;
 
+use v5.24;
 use strict;
 use warnings;
+use namespace::autoclean;
 
 # core modules
 use List::Util qw(any);
@@ -27,7 +29,7 @@ use List::Util qw(any);
 # CPAN modules
 
 # OTOBO modules
-use Kernel::Language qw(Translatable);
+use Kernel::Language              qw(Translatable);
 use Kernel::System::VariableCheck qw(:all);
 
 our $ObjectManagerDisabled = 1;
@@ -36,12 +38,20 @@ sub new {
     my ( $Type, %Param ) = @_;
 
     # allocate new hash for object
-    my $Self = {%Param};
-    bless( $Self, $Type );
+    my $Self = bless {%Param}, $Type;
 
     my $DynamicFieldConfigs = $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
         ObjectType => 'CustomerCompany',
     );
+
+    # set pref for columns key
+    $Self->{PrefKeyIncludeInvalid} = 'IncludeInvalid' . '-' . $Self->{Action};
+
+    my %Preferences = $Kernel::OM->Get('Kernel::System::User')->GetPreferences(
+        UserID => $Self->{UserID},
+    );
+
+    $Self->{IncludeInvalid} = $Preferences{ $Self->{PrefKeyIncludeInvalid} };
 
     $Self->{DynamicFieldLookup} = { map { $_->{Name} => $_ } @{$DynamicFieldConfigs} };
 
@@ -63,11 +73,22 @@ sub Run {
     my $CustomerCompanyObject = $Kernel::OM->Get('Kernel::System::CustomerCompany');
 
     my %GetParam;
-    $GetParam{Source} = $ParamObject->GetParam( Param => 'Source' ) || 'CustomerCompany';
+    $GetParam{Source}         = $ParamObject->GetParam( Param => 'Source' ) || 'CustomerCompany';
+    $GetParam{IncludeInvalid} = $ParamObject->GetParam( Param => 'IncludeInvalid' );
 
-    # ---
-    # RotherOSS:
-    # ---
+    if ( defined $GetParam{IncludeInvalid} ) {
+        $Kernel::OM->Get('Kernel::System::User')->SetPreferences(
+            UserID => $Self->{UserID},
+            Key    => $Self->{PrefKeyIncludeInvalid},
+            Value  => $GetParam{IncludeInvalid},
+        );
+
+        $Self->{IncludeInvalid} = $GetParam{IncludeInvalid};
+    }
+
+# ---
+# RotherOSS:
+# ---
     # Check if the user has permission to set multitenancy.
     if ( $ConfigObject->Get('Multitenancy') ) {
         my $GroupObject = $Kernel::OM->Get('Kernel::System::Group');
@@ -85,7 +106,7 @@ sub Run {
             $Self->{MultitenancyPermission} = 1;
         }
     }
-    # ---
+# ---
 
     # ------------------------------------------------------------ #
     # change
@@ -299,7 +320,7 @@ sub Run {
                     my $CustomerID = $ParamObject->GetParam( Param => 'CustomerID' ) || '';
                     return $LayoutObject->Redirect(
                         OP =>
-                            "Action=$Self->{Action};Subaction=Change;CustomerID=$CustomerID;Nav=$Nav;Notification=Update"
+                            "Action=$Self->{Action};Subaction=Change;CustomerID=" . $LayoutObject->LinkEncode($CustomerID) . ";Nav=$Nav;Notification=Update"
                     );
                 }
                 else {
@@ -459,13 +480,14 @@ sub Run {
                     Search => $Search,
                     %GetParam,
                 );
-                my $Output = $LayoutObject->Header();
-                $Output .= $LayoutObject->NavigationBar(
-                    Type => $NavigationBarType,
-                );
-                $Output .= $LayoutObject->Notify(
-                    Info => Translatable('Customer company added!'),
-                );
+                my $Output = join '',
+                    $LayoutObject->Header,
+                    $LayoutObject->NavigationBar(
+                        Type => $NavigationBarType,
+                    ),
+                    $LayoutObject->Notify(
+                        Info => Translatable('Customer company added!'),
+                    );
 
                 # set dynamic field values
                 my $DynamicFieldObject = $Kernel::OM->Get('Kernel::System::DynamicField');
@@ -578,6 +600,7 @@ sub _Edit {
     my ( $Self, %Param ) = @_;
 
     my $LayoutObject = $Kernel::OM->Get('Kernel::Output::HTML::Layout');
+    my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
 
     $LayoutObject->Block(
         Name => 'Overview',
@@ -594,9 +617,6 @@ sub _Edit {
         Name => 'OverviewUpdate',
         Data => \%Param,
     );
-
-    # get config object
-    my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
 
     # send parameter ReadOnly to JS object
     $LayoutObject->AddJSData(
@@ -679,22 +699,38 @@ sub _Edit {
                     Name  => $Entry->[0],
                     Class => "$OptionRequired Modernize " .
                         ( $Param{Errors}->{ $Entry->[0] . 'Invalid' } || '' ),
-                    Translation => 0,
+                    Translation => 1,
+                    Sort        => 'AlphanumericKey',
                     SelectedID  => $Param{ $Entry->[0] },
                     Max         => 35,
                 );
 
             }
-            elsif ( $Entry->[0] =~ /^CustomerCompanyCountry/i ) {
-                my $OptionRequired = '';
-                if ( $Entry->[4] ) {
-                    $OptionRequired = 'Validate_Required';
+            elsif ( $Entry->[0] =~ m/^CustomerCompanyCountry/i ) {
+
+                # build Country selection with English names
+                $Block = 'Option';
+                my $OptionRequired = $Entry->[4] ? 'Validate_Required' : '';
+                my $CountryList;
+                if ( $ConfigObject->Get('ReferenceData::TranslatedCountryNames') ) {
+
+                    # Flag+Name => code
+                    $CountryList = $Kernel::OM->Get('Kernel::System::ReferenceData')->CLDRCountryList(
+                        Language => $LayoutObject->{UserLanguage},
+                    );
+
+                    # Make sure that the previous value exists in the selection list even if it isn't a country code.
+                    my $PreviousCountry = $Param{ $Entry->[0] };
+                    if ($PreviousCountry) {
+                        $CountryList->{$PreviousCountry} //= $PreviousCountry;
+                    }
+                }
+                else {
+
+                    # English name => English name
+                    $CountryList = $Kernel::OM->Get('Kernel::System::ReferenceData')->CountryList;
                 }
 
-                # build Country string
-                my $CountryList = $Kernel::OM->Get('Kernel::System::ReferenceData')->CountryList();
-
-                $Block = 'Option';
                 $Param{Option} = $LayoutObject->BuildSelection(
                     Data         => $CountryList,
                     PossibleNone => 1,
@@ -702,17 +738,14 @@ sub _Edit {
                     Name         => $Entry->[0],
                     Class        => "$OptionRequired Modernize " .
                         ( $Param{Errors}->{ $Entry->[0] . 'Invalid' } || '' ),
-                    SelectedID => defined( $Param{ $Entry->[0] } ) ? $Param{ $Entry->[0] } : 1,
+                    SelectedID => ( $Param{ $Entry->[0] } // 1 ),
                 );
             }
-            elsif ( $Entry->[0] =~ /^ValidID/i ) {
-                my $OptionRequired = '';
-                if ( $Entry->[4] ) {
-                    $OptionRequired = 'Validate_Required';
-                }
+            elsif ( $Entry->[0] =~ m/^ValidID/i ) {
 
                 # build ValidID string
                 $Block = 'Option';
+                my $OptionRequired = $Entry->[4] ? 'Validate_Required' : '';
                 $Param{Option} = $LayoutObject->BuildSelection(
                     Data  => { $ValidObject->ValidList(), },
                     Name  => $Entry->[0],
@@ -721,9 +754,9 @@ sub _Edit {
                     SelectedID => defined( $Param{ $Entry->[0] } ) ? $Param{ $Entry->[0] } : 1,
                 );
             }
-            # ---
-            # RotherOSS: Build the group field.
-            # ---
+# ---
+# RotherOSS: Build the group field.
+# ---
             elsif ( $Entry->[0] =~ /^UserGroupID$/i ) {
                 # Check if the user has the permission to see/change the multitenancy field.
                 if ( !$Self->{MultitenancyPermission} ) {
@@ -744,7 +777,7 @@ sub _Edit {
                     );
                 }
             }
-            # --- 
+# --- 
             else {
                 $Param{Value} = $Param{ $Entry->[0] } || '';
             }
@@ -761,9 +794,9 @@ sub _Edit {
                 $Param{RequiredClass}  = '';
             }
 
-            # show required flag
+            # show readonly flag
             if ( $Entry->[7] ) {
-                $Param{ReadOnlyType} = 'readonly="readonly"';
+                $Param{ReadOnlyType} = 'readonly';
             }
             else {
                 $Param{ReadOnlyType} = '';
@@ -802,6 +835,7 @@ sub _Edit {
             }
         }
     }
+
     return 1;
 }
 
@@ -815,6 +849,13 @@ sub _Overview {
         Data => \%Param,
     );
 
+    $LayoutObject->Block(
+        Name => 'IncludeInvalid',
+        Data => {
+            IncludeInvalid        => $Self->{IncludeInvalid},
+            IncludeInvalidChecked => $Self->{IncludeInvalid} ? 'checked' : '',
+        },
+    );
     $LayoutObject->Block( Name => 'ActionList' );
     $LayoutObject->Block(
         Name => 'ActionSearch',
@@ -884,7 +925,7 @@ sub _Overview {
 
         my %List = $CustomerCompanyObject->CustomerCompanyList(
             Search => $Param{Search},
-            Valid  => 0,
+            Valid  => $Self->{IncludeInvalid} ? 0 : 1,
         );
 
         if ( keys %ListAllItems > $Limit ) {

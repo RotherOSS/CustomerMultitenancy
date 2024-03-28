@@ -2,9 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2022 Rother OSS GmbH, https://otobo.de/
+# Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.de/
 # --
-# $origin: otobo - e894aef610208fdc401a4df814ca59658292fbba - Kernel/System/CustomerUser/LDAP.pm
+# $origin: otobo - 4cdd2f2766468573cc2970dfbd38a6c9781f0bd0 - Kernel/System/CustomerUser/LDAP.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -181,9 +181,9 @@ sub new {
     $Self->{ConfiguredDynamicFieldNames} = { map { $_->[2] => 1 } @DynamicFieldMapEntries };
 
 
-    # ---
-    # RotherOSS:
-    # ---
+# ---
+# RotherOSS:
+# ---
     my $LayoutParam = $Kernel::OM->{Param}->{'Kernel::Output::HTML::Layout'};
 
     # Check if multitenancy is enabled and the request is coming from a user.
@@ -208,7 +208,7 @@ sub new {
             }
         }
     }
-    # ---
+# ---
 
     return $Self;
 }
@@ -521,13 +521,13 @@ sub CustomerSearch {
 
     # check cache
     my $CacheKey = join '::', map { $_ . '=' . $Param{$_} } sort keys %Param;
-    # ---
-    # RotherOSS: Use cache for multitenancy.
-    # ---
+# ---
+# RotherOSS: Use cache for multitenancy.
+# ---
     if ( $Self->{Multitenancy} ) {
         $CacheKey .= join '', map { '::GroupID=' . $_ } @{ $Self->{UserGroupIDs} };
     }
-    # ---
+# ---
     if ( $Self->{CacheObject} ) {
         my $Users = $Self->{CacheObject}->Get(
             Type => $Self->{CacheType} . '_CustomerSearch',
@@ -548,9 +548,9 @@ sub CustomerSearch {
     # combine needed attrs
     my @Attributes = ( @CustomerUserListFieldsWithoutDynamicFields, $Self->{CustomerKey} );
 
-    # ---
-    # RotherOSS: Don't search for customer users without group permission.
-    # ---
+# ---
+# RotherOSS: Don't search for customer users without group permission.
+# ---
     if ( $Self->{Multitenancy} ) {
         my $GroupIDAttr;
         for my $Map ( @{ $Self->{CustomerUserMap}->{Map} } ) {
@@ -589,7 +589,7 @@ sub CustomerSearch {
             $Filter .= $AdditionalFilter;
         }
     }
-    # ---
+# ---
 
     # perform user search
     my $Result = $Self->{LDAP}->search(
@@ -760,7 +760,8 @@ sub CustomerSearchDetail {
         return;
     }
 
-    my $Valid = defined $Param{Valid} ? $Param{Valid} : 1;
+    # Return only valid users per default
+    my $Valid = $Param{Valid} // 1;
 
     $Param{Limit} //= '';
 
@@ -1518,6 +1519,25 @@ sub CustomerUserDataGet {
 
         if ( $Value && $Entry->[2] =~ /^targetaddress$/i ) {
             $Value =~ s/SMTP:(.*)/$1/;
+        }
+
+        if ( IsStringWithData( $Self->{CustomerUserMap}->{TranslateManagerTo} ) ) {
+            if ( $Value && $Entry->[2] =~ /^manager$/i ) {
+
+                # We need to check if we need to translate the manager flag
+                my $TranslateTo = $Self->{CustomerUserMap}->{TranslateManagerTo};
+
+                # perform search
+                my $ResultManager = $Self->{LDAP}->search(
+                    base   => $Value,
+                    scope  => 'base',
+                    filter => "(objectClass=*)",
+                );
+
+                # get first entry
+                my $ResultManager2 = $ResultManager->entry(0);
+                $Value = $Self->_ConvertFrom( $ResultManager2->get_value($TranslateTo) ) || '';
+            }
         }
 
         $Data{ $Entry->[0] } = $Value;

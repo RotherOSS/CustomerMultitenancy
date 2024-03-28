@@ -2,9 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2022 Rother OSS GmbH, https://otobo.de/
+# Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.de/
 # --
-# $origin: otobo - e894aef610208fdc401a4df814ca59658292fbba - Kernel/System/CustomerUser/DB.pm
+# $origin: otobo - 61444e07c5058f80e5c1ad0952fbe7ca0f540a88 - Kernel/System/CustomerUser/DB.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -21,10 +21,14 @@ package Kernel::System::CustomerUser::DB;
 use strict;
 use warnings;
 
-use Kernel::System::VariableCheck qw(:all);
+# core modules
+use Digest::SHA ();
 
-use Crypt::PasswdMD5 qw(unix_md5_crypt apache_md5_crypt);
-use Digest::SHA;
+# CPAN modules
+use Crypt::PasswdMD5 qw(apache_md5_crypt unix_md5_crypt );
+
+# OTOBO modules
+use Kernel::System::VariableCheck qw(:all);
 
 use Kernel::System::VariableCheck qw(:all);
 
@@ -108,6 +112,7 @@ sub new {
             DatabaseUser => $Self->{CustomerUserMap}->{Params}->{User},
             DatabasePw   => $Self->{CustomerUserMap}->{Params}->{Password},
             %{ $Self->{CustomerUserMap}->{Params} },
+            DisconnectOnDestruction => 1,
         ) || die('Can\'t connect to database!');
 
         # remember that we have the DBObject not from parent call
@@ -126,9 +131,9 @@ sub new {
     my @DynamicFieldMapEntries = grep { $_->[5] eq 'dynamic_field' } @{ $Self->{CustomerUserMap}->{Map} };
     $Self->{ConfiguredDynamicFieldNames} = { map { $_->[2] => 1 } @DynamicFieldMapEntries };
 
-    # ---
-    # RotherOSS:
-    # ---
+# ---
+# RotherOSS:
+# ---
     my $LayoutParam = $Kernel::OM->{Param}->{'Kernel::Output::HTML::Layout'};
     my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
 
@@ -154,7 +159,7 @@ sub new {
             }
         }
     }
-    # ---
+# ---
 
     return $Self;
 }
@@ -294,7 +299,7 @@ sub CustomerSearch {
     my ( $Self, %Param ) = @_;
 
     my %Users;
-    my $Valid = defined $Param{Valid} ? $Param{Valid} : 1;
+    my $Valid = $Param{Valid} // 1;
 
     # check needed stuff
     if (
@@ -314,13 +319,13 @@ sub CustomerSearch {
 
     # check cache
     my $CacheKey = join '::', map { $_ . '=' . $Param{$_} } sort keys %Param;
-    # ---
-    # RotherOSS: Use cache for multitenancy.
-    # ---
+# ---
+# RotherOSS: Use cache for multitenancy.
+# ---
     if ( $Self->{Multitenancy} ) {
         $CacheKey .= join '', map { '::GroupID=' . $_ } @{ $Self->{UserGroupIDs} };
     }
-    # ---
+# ---
     if ( $Self->{CacheObject} ) {
         my $Users = $Self->{CacheObject}->Get(
             Type => $Self->{CacheType} . '_CustomerSearch',
@@ -381,9 +386,9 @@ sub CustomerSearch {
         $SQL .= $QueryCondition{SQL};
         push @Bind, @{ $QueryCondition{Values} };
 
-        # ---
-        # RotherOSS: Don't search for customer users without group permission.
-        # ---
+# ---
+# RotherOSS: Don't search for customer users without group permission.
+# ---
         if ( $Self->{Multitenancy} ) {
             if ( $Self->{CustomerUserMap}->{CustomerCompanySupport} ) {
                 # TODO: Workaround until the search gets changed.
@@ -437,7 +442,7 @@ sub CustomerSearch {
                 $SQL .= " AND ($InCondition)";
             }
         }
-        # ---
+# ---
 
         $SQL .= ' ';
     }
@@ -659,7 +664,8 @@ sub CustomerSearchDetail {
         return;
     }
 
-    my $Valid = defined $Param{Valid} ? $Param{Valid} : 1;
+    # Return only valid users per default
+    my $Valid = $Param{Valid} // 1;
 
     $Param{Limit} //= '';
 

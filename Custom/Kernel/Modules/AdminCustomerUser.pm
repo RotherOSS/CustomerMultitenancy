@@ -2,9 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2022 Rother OSS GmbH, https://otobo.de/
+# Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.de/
 # --
-# $origin: otobo - 5e256046cf5064b5b57a5b05d32f47999798ae19 - Kernel/Modules/AdminCustomerUser.pm
+# $origin: otobo - 9274efd624fc535c4a2eea45a6e833b4eddcc6ce - Kernel/Modules/AdminCustomerUser.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -18,12 +18,18 @@
 
 package Kernel::Modules::AdminCustomerUser;
 
+use v5.24;
 use strict;
 use warnings;
+use namespace::autoclean;
 
-use Kernel::System::CheckItem;
+# core modules
+
+# CPAN modules
+
+# OTOBO modules
+use Kernel::Language              qw(Translatable);
 use Kernel::System::VariableCheck qw(:all);
-use Kernel::Language qw(Translatable);
 
 our $ObjectManagerDisabled = 1;
 
@@ -33,6 +39,15 @@ sub new {
     # allocate new hash for object
     my $Self = {%Param};
     bless( $Self, $Type );
+
+    # set pref for columns key
+    $Self->{PrefKeyIncludeInvalid} = 'IncludeInvalid' . '-' . $Self->{Action};
+
+    my %Preferences = $Kernel::OM->Get('Kernel::System::User')->GetPreferences(
+        UserID => $Self->{UserID},
+    );
+
+    $Self->{IncludeInvalid} = $Preferences{ $Self->{PrefKeyIncludeInvalid} };
 
     my $DynamicFieldConfigs = $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
         ObjectType => 'CustomerUser',
@@ -49,9 +64,20 @@ sub Run {
     my $ParamObject  = $Kernel::OM->Get('Kernel::System::Web::Request');
     my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
 
-    my $Nav    = $ParamObject->GetParam( Param => 'Nav' )    || '';
-    my $Source = $ParamObject->GetParam( Param => 'Source' ) || 'CustomerUser';
-    my $Search = $ParamObject->GetParam( Param => 'Search' );
+    my $Nav            = $ParamObject->GetParam( Param => 'Nav' )    || '';
+    my $Source         = $ParamObject->GetParam( Param => 'Source' ) || 'CustomerUser';
+    my $Search         = $ParamObject->GetParam( Param => 'Search' );
+    my $IncludeInvalid = $ParamObject->GetParam( Param => 'IncludeInvalid' );
+
+    if ( defined $IncludeInvalid ) {
+        $Kernel::OM->Get('Kernel::System::User')->SetPreferences(
+            UserID => $Self->{UserID},
+            Key    => $Self->{PrefKeyIncludeInvalid},
+            Value  => $IncludeInvalid,
+        );
+
+        $Self->{IncludeInvalid} = $IncludeInvalid;
+    }
     $Search
         ||= $ConfigObject->Get('AdminCustomerUser::RunInitialWildcardSearch') ? '*' : '';
 
@@ -98,9 +124,9 @@ sub Run {
     my $CustomerUserObject = $Kernel::OM->Get('Kernel::System::CustomerUser');
     my $MainObject         = $Kernel::OM->Get('Kernel::System::Main');
 
-    # ---
-    # RotherOSS:
-    # ---
+# ---
+# RotherOSS:
+# ---
     # Check if the user has permission to set multitenancy.
     if ( $ConfigObject->Get('Multitenancy') ) {
         my $GroupObject = $Kernel::OM->Get('Kernel::System::Group');
@@ -118,7 +144,7 @@ sub Run {
             $Self->{MultitenancyPermission} = 1;
         }
     }
-    # ---
+# ---
 
     # ------------------------------------------------------------ #
     #  switch to customer
@@ -157,23 +183,16 @@ sub Run {
             $Expires = '';
         }
 
-        # Restrict Cookie to HTTPS if it is used.
-        my $CookieSecureAttribute = $ConfigObject->Get('HttpType') eq 'https' ? 1 : undef;
-
         my $LayoutObject = Kernel::Output::HTML::Layout->new(
             %{$Self},
-            SetCookies => {
-                SessionIDCookie => $ParamObject->SetCookie(
-                    Key      => $SessionName,
-                    Value    => $NewSessionID,
-                    Expires  => $Expires,
-                    Path     => $ConfigObject->Get('ScriptAlias'),
-                    Secure   => $CookieSecureAttribute,
-                    HTTPOnly => 1,
-                ),
-            },
             SessionID   => $NewSessionID,
             SessionName => $ConfigObject->Get('SessionName'),
+        );
+        $LayoutObject->SetCookie(
+            Key     => 'SessionIDCookie',
+            Name    => $SessionName,
+            Value   => $NewSessionID,
+            Expires => $Expires,
         );
 
         # log event
@@ -395,7 +414,7 @@ sub Run {
                 );
             }
 
-            if ( $CurrentUserData{UserPassword} ne $GetParam{UserPassword} ) {
+            if ( $GetParam{UserPassword} && ( $CurrentUserData{UserPassword} // '' ) ne $GetParam{UserPassword} ) {
 
                 $UpdateSuccess = $CustomerUserObject->DeleteOnePreference(
                     Key    => 'UserLastPwChangeTime',
@@ -887,6 +906,13 @@ sub _Overview {
         Data => \%Param,
     );
 
+    $LayoutObject->Block(
+        Name => 'IncludeInvalid',
+        Data => {
+            IncludeInvalid        => $Self->{IncludeInvalid},
+            IncludeInvalidChecked => $Self->{IncludeInvalid} ? 'checked' : '',
+        },
+    );
     $LayoutObject->Block( Name => 'ActionList' );
     $LayoutObject->Block(
         Name => 'ActionSearch',
@@ -958,7 +984,7 @@ sub _Overview {
 
         my %List = $CustomerUserObject->CustomerSearch(
             Search => $Param{Search},
-            Valid  => 0,
+            Valid  => $Self->{IncludeInvalid} ? 0 : 1,
         );
 
         if ( keys %ListAllItems > $Limit ) {
@@ -1211,7 +1237,8 @@ sub _Edit {
             $Param{RequiredClass} .= ' Validate_Email';
         }
 
-        # build selections or input fields
+        # Build selections or input fields.
+        # An explicit selection has the highest priority.
         if ( $ConfigObject->Get( $Param{Source} )->{Selections}->{ $Entry->[0] } ) {
             $Block = 'Option';
 
@@ -1238,7 +1265,34 @@ sub _Edit {
                 Disabled    => $UpdateOnlyPreferences ? 1 : 0,
             );
         }
-        elsif ( $Entry->[0] =~ /^ValidID/i ) {
+        elsif (
+            $Entry->[0] =~ m/^UserCountry/i
+            &&
+            $ConfigObject->Get('ReferenceData::TranslatedCountryNames')
+            )
+        {
+            $Block = 'Option';
+
+            my $CountryList = $Kernel::OM->Get('Kernel::System::ReferenceData')->CLDRCountryList(
+                Language => $LayoutObject->{UserLanguage},
+            );
+
+            # Make sure that the previous value exists in the selection list even if isn't a countr code.
+            my $PreviousCountry = $Param{ $Entry->[0] };
+            if ($PreviousCountry) {
+                $CountryList->{$PreviousCountry} //= $PreviousCountry;
+            }
+
+            $Param{Option} = $LayoutObject->BuildSelection(
+                Data         => $CountryList,
+                PossibleNone => 1,
+                Sort         => 'AlphanumericValue',
+                Name         => $Entry->[0],
+                Class        => "$Param{RequiredClass} Modernize " . $Param{Errors}->{ $Entry->[0] . 'Invalid' },
+                SelectedID   => ( $Param{ $Entry->[0] } // 1 ),
+            );
+        }
+        elsif ( $Entry->[0] =~ m/^ValidID/i ) {
 
             # Change the validation class
             if ( $Param{RequiredClass} ) {
@@ -1256,7 +1310,7 @@ sub _Edit {
             );
         }
         elsif (
-            $Entry->[0] =~ /^UserCustomerID$/i
+            $Entry->[0] =~ m/^UserCustomerID$/i
             && $ConfigObject->Get( $Param{Source} )->{CustomerCompanySupport}
             )
         {
@@ -1285,6 +1339,13 @@ sub _Edit {
             if ($UseAutoComplete) {
 
                 my $Value = $Param{ $Entry->[0] } || $Param{CustomerID};
+                $Value = $LayoutObject->Output(
+                    Template => "[% Data.Value | html %]",
+                    Data     => {
+                        Value => $Value,
+                    }
+                );
+
                 $Param{Option} = '<input type="text" id="UserCustomerID" name="UserCustomerID" value="' . $Value . '"
                     class="W50pc CustomerAutoCompleteSimple '
                     . $Param{RequiredClass} . ' '
@@ -1307,9 +1368,9 @@ sub _Edit {
             # Use CustomerID param if called from CIC.
             $Param{Value} = $Param{ $Entry->[0] } || $Param{CustomerID} || '';
         }
-        # ---
-        # RotherOSS: Build the group field.
-        # ---
+# ---
+# RotherOSS: Build the group field.
+# ---
         elsif ( $Entry->[0] =~ /^UserGroupID$/i ) {
             # Check if the user has the permission to see/change the multitenancy field.
             if ( !$Self->{MultitenancyPermission} ) {
@@ -1331,7 +1392,7 @@ sub _Edit {
                 );
             }
         }
-        # ---
+# ---
         else {
             $Param{Value} = $Param{ $Entry->[0] } || '';
         }

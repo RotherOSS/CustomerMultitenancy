@@ -2,9 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2022 Rother OSS GmbH, https://otobo.de/
+# Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.de/
 # --
-# $origin: otobo - e894aef610208fdc401a4df814ca59658292fbba - Kernel/System/CustomerCompany/DB.pm
+# $origin: otobo - 61444e07c5058f80e5c1ad0952fbe7ca0f540a88 - Kernel/System/CustomerCompany/DB.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -72,10 +72,11 @@ sub new {
     # create new db connect if DSN is given
     if ( $Self->{CustomerCompanyMap}->{Params}->{DSN} ) {
         $Self->{DBObject} = Kernel::System::DB->new(
-            DatabaseDSN  => $Self->{CustomerCompanyMap}->{Params}->{DSN},
-            DatabaseUser => $Self->{CustomerCompanyMap}->{Params}->{User},
-            DatabasePw   => $Self->{CustomerCompanyMap}->{Params}->{Password},
-            Type         => $Self->{CustomerCompanyMap}->{Params}->{Type} || '',
+            DatabaseDSN             => $Self->{CustomerCompanyMap}->{Params}->{DSN},
+            DatabaseUser            => $Self->{CustomerCompanyMap}->{Params}->{User},
+            DatabasePw              => $Self->{CustomerCompanyMap}->{Params}->{Password},
+            Type                    => $Self->{CustomerCompanyMap}->{Params}->{Type} || '',
+            DisconnectOnDestruction => 1,
         ) || die('Can\'t connect to database!');
 
         # remember that we have the DBObject not from parent call
@@ -94,9 +95,9 @@ sub new {
     my @DynamicFieldMapEntries = grep { $_->[5] eq 'dynamic_field' } @{ $Self->{CustomerCompanyMap}->{Map} };
     $Self->{ConfiguredDynamicFieldNames} = { map { $_->[2] => 1 } @DynamicFieldMapEntries };
 
-    # ---
-    # RotherOSS:
-    # ---
+# ---
+# RotherOSS:
+# ---
     my $LayoutParam = $Kernel::OM->{Param}->{'Kernel::Output::HTML::Layout'};
     my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
 
@@ -122,7 +123,7 @@ sub new {
             }
         }
     }
-    # ---
+# ---
 
     return $Self;
 }
@@ -146,13 +147,13 @@ sub CustomerCompanyList {
 
         $CacheType = $Self->{CacheType} . '_CustomerCompanyList';
         $CacheKey  = "CustomerCompanyList::${Valid}::${Limit}::" . ( $Param{Search} || '' );
-        # ---
-        # RotherOSS: Use cache for multitenancy.
-        # ---
+# ---
+# RotherOSS: Use cache for multitenancy.
+# ---
         if ( $Self->{Multitenancy} ) {
             $CacheKey .= join '', map { '::GroupID=' . $_ } @{ $Self->{UserGroupIDs} };
         }
-        # ---
+# ---
         my $Data = $Self->{CacheObject}->Get(
             Type => $CacheType,
             Key  => $CacheKey,
@@ -210,9 +211,9 @@ sub CustomerCompanyList {
             push @Bind,       @{ $QueryCondition{Values} };
         }
 
-        # ---
-        # RotherOSS: Don't search for customer without group permission.
-        # ---
+# ---
+# RotherOSS: Don't search for customer without group permission.
+# ---
         if ( $Self->{Multitenancy} ) {
             # Get the column name where the group ID is stored.
             my $GroupIDCol;
@@ -259,13 +260,12 @@ sub CustomerCompanyList {
                 push @Conditions, " ($InCondition)";
             }
         }
-        # ---
+# ---
     }
 
     # dynamic field handling
     my $DynamicFieldBackendObject = $Kernel::OM->Get('Kernel::System::DynamicField::Backend');
-
-    my $DynamicFieldConfigs = $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
+    my $DynamicFieldConfigs       = $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
         ObjectType => 'CustomerCompany',
         Valid      => 1,
     );
@@ -485,24 +485,18 @@ sub CustomerCompanySearchDetail {
         }
     }
 
-    my $DynamicFieldObject        = $Kernel::OM->Get('Kernel::System::DynamicField');
+    # dynamic field handling
     my $DynamicFieldBackendObject = $Kernel::OM->Get('Kernel::System::DynamicField::Backend');
-
-    # Check all configured change dynamic fields, build lookup hash by name.
-    my %CustomerCompanyDynamicFieldName2Config;
-    my $CustomerCompanyDynamicFields = $DynamicFieldObject->DynamicFieldListGet(
+    my $DynamicFieldConfigs       = $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
         ObjectType => 'CustomerCompany',
     );
-    for my $DynamicField ( @{$CustomerCompanyDynamicFields} ) {
-        $CustomerCompanyDynamicFieldName2Config{ $DynamicField->{Name} } = $DynamicField;
-    }
 
     my $SQLDynamicFieldFrom     = '';
     my $SQLDynamicFieldWhere    = '';
     my $DynamicFieldJoinCounter = 1;
 
     DYNAMICFIELD:
-    for my $DynamicField ( @{$CustomerCompanyDynamicFields} ) {
+    for my $DynamicField ( @{$DynamicFieldConfigs} ) {
 
         my $SearchParam = $Param{ "DynamicField_" . $DynamicField->{Name} };
 
@@ -548,6 +542,7 @@ sub CustomerCompanySearchDetail {
                             . "' on field '"
                             . $DynamicField->{Name} . "'!",
                     );
+
                     return;
                 }
 
