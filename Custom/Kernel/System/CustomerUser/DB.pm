@@ -4,7 +4,7 @@
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
 # Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.de/
 # --
-# $origin: otobo - 61444e07c5058f80e5c1ad0952fbe7ca0f540a88 - Kernel/System/CustomerUser/DB.pm
+# $origin: otobo - 0e36a8abc7e45c958bddeb719e4bf3e1a9450fc2 - Kernel/System/CustomerUser/DB.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -28,8 +28,6 @@ use Digest::SHA ();
 use Crypt::PasswdMD5 qw(apache_md5_crypt unix_md5_crypt );
 
 # OTOBO modules
-use Kernel::System::VariableCheck qw(:all);
-
 use Kernel::System::VariableCheck qw(:all);
 
 our @ObjectDependencies = (
