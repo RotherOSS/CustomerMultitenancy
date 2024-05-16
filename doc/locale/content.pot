@@ -1,0 +1,163 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.de/
+# This file is distributed under the same license as the OTOBO Installation Guide package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: OTOBO Installation Guide rel-10.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-16 09:20+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../content/index.rst:20
+msgid "Sacrifice to Sphinx"
+msgstr ""
+
+#: ../../content/index.rst:23
+msgid "Description"
+msgstr ""
+
+#: ../../content/index.rst:24
+msgid "This package allows group based restrictions on customer and customer user information for agents. Per default all customers are visible for agents. After installation of this package customers can be assigned to an agent group. Those customers are then visible only for agents with access rights to the specific group. Also complete customer sources can be restricted."
+msgstr ""
+
+#: ../../content/index.rst:26
+msgid "Access rights on customer users will be inherited by the rights set on the customers, but can also individually be set."
+msgstr ""
+
+#: ../../content/index.rst:28
+msgid "This functionality works for the customer (user) tables of OTOBO, and read only for remote databases as well as LDAP."
+msgstr ""
+
+#: ../../content/index.rst:31
+msgid "System requirements"
+msgstr ""
+
+#: ../../content/index.rst:34
+msgid "Framework"
+msgstr ""
+
+#: ../../content/index.rst:35
+msgid "OTOBO 10.0.x"
+msgstr ""
+
+#: ../../content/index.rst:38
+msgid "Packages"
+msgstr ""
+
+#: ../../content/index.rst:39
+#: ../../content/index.rst:43
+msgid "\\-"
+msgstr ""
+
+#: ../../content/index.rst:42
+msgid "Third-party software"
+msgstr ""
+
+#: ../../content/index.rst:46
+msgid "Setup"
+msgstr ""
+
+#: ../../content/index.rst:48
+msgid "In the Config.pm a set of adjustments is mandatory. For both DB and LDAP it is necessary to change the CustomerCompany and/or CustomerUser blocks. (If you do not have them present, please copy them for Kernel/Config/Defaults.pm to Kernel/Config.pm and adjust them in the latter!) To enable setting of the agent group in AdminCustomer and AdminCustomerUser the variables have to be added to the maps."
+msgstr ""
+
+#: ../../content/index.rst:51
+msgid "Backends"
+msgstr ""
+
+#: ../../content/index.rst:54
+msgid "Database"
+msgstr ""
+
+#: ../../content/index.rst:56
+msgid "For the DB backend in both the CustomerCompany and CustomerUser definitions this can be added as follows."
+msgstr ""
+
+#: ../../content/index.rst:71
+msgid "LDAP"
+msgstr ""
+
+#: ../../content/index.rst:73
+msgid "For the LDAP backend in both the CustomerCompany and CustomerUser definitions this is similar."
+msgstr ""
+
+#: ../../content/index.rst:88
+msgid "'otoboGroup' here is just exemplary and has to be replaced with the attribute of the directory. Additionally in most cases a mapping between AD and OTOBO groups will be necessary. This is configured by the following."
+msgstr ""
+
+#: ../../content/index.rst:110
+msgid "Global"
+msgstr ""
+
+#: ../../content/index.rst:112
+msgid "Independently of the backend, it can also be restricted completely."
+msgstr ""
+
+#: ../../content/index.rst:126
+msgid "Frontend"
+msgstr ""
+
+#: ../../content/index.rst:128
+msgid "In the customer and customer user administrations the groups can now be configured or seen for read only backends."
+msgstr ""
+
+#: ../../content/index.rst:131
+msgid "Configuration Reference"
+msgstr ""
+
+#: ../../content/index.rst:134
+msgid "Core::Permission"
+msgstr ""
+
+#: ../../content/index.rst:137
+msgid "Multitenancy"
+msgstr ""
+
+#: ../../content/index.rst:138
+msgid "Enables the multitenancy function for customer and customer user."
+msgstr ""
+
+#: ../../content/index.rst:141
+msgid "Multitenancy::PermissionGroup"
+msgstr ""
+
+#: ../../content/index.rst:142
+msgid "Specifies the group that can set multitenancy for customer. Multitenancy does not apply to members of this group."
+msgstr ""
+
+#: ../../content/index.rst:145
+msgid "About"
+msgstr ""
+
+#: ../../content/index.rst:148
+msgid "Contact"
+msgstr ""
+
+#: ../../content/index.rst:149
+msgid "Rother OSS GmbH"
+msgstr ""
+
+#: ../../content/index.rst:150
+msgid "Email: hello@otobo.de"
+msgstr ""
+
+#: ../../content/index.rst:151
+msgid "Web: https://otobo.de"
+msgstr ""
+
+#: ../../content/index.rst:154
+msgid "Version"
+msgstr ""
+
+#: ../../content/index.rst:155
+msgid "Author: |doc-vendor| / Version: |doc-version| / Date of release: |doc-datestamp|"
+msgstr ""
+
