@@ -28,6 +28,8 @@ sub Data {
         '';
 
     # SysConfig
+    $Self->{Translation}->{'Defines the initial height for the rich text editor component in pixels.'} =
+        '';
     $Self->{Translation}->{'Enables the multitenancy function for customer and customer user.'} =
         '';
     $Self->{Translation}->{'Specifies the group that can set multitenancy for customer. Multitenancy does not apply to members of this group.'} =

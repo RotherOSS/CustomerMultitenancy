@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: CustomerMultitenancy\n"
-"POT-Creation-Date: 2024-05-25 04:13+0000\n"
+"POT-Creation-Date: 2024-07-30 01:48+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -12,6 +12,10 @@ msgstr ""
 
 #. Template: AdminCustomerCompany
 msgid "Limits the access of customer data to certain groups (multitenancy). Without selection, customer data is visible to all agents."
+msgstr ""
+
+#. SysConfig
+msgid "Defines the initial height for the rich text editor component in pixels."
 msgstr ""
 
 #. SysConfig
