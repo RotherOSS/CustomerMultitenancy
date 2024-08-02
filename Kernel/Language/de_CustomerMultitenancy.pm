@@ -28,12 +28,6 @@ sub Data {
         '';
 
     # SysConfig
-    $Self->{Translation}->{'Defines if parent-child translations for queues and services should be generated automatically.'} =
-        '';
-    $Self->{Translation}->{'Defines the initial height for the rich text editor component in pixels.'} =
-        '';
-    $Self->{Translation}->{'Defines the initial height in pixels for the rich text editor component for this screen.'} =
-        '';
     $Self->{Translation}->{'Enables the multitenancy function for customer and customer user.'} =
         '';
     $Self->{Translation}->{'Specifies the group that can set multitenancy for customer. Multitenancy does not apply to members of this group.'} =
