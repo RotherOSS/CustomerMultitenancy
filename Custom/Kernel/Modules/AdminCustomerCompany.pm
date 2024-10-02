@@ -2,9 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.de/
+# Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.io/
 # --
-# $origin: otobo - b4b7c6ba6617aeb4cd9e844905217331dbf2c8b5 - Kernel/Modules/AdminCustomerCompany.pm
+# $origin: otobo - 4dade81e7e04433cb2aed36af0c8727d822a1c61 - Kernel/Modules/AdminCustomerCompany.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -243,8 +243,6 @@ sub Run {
                 my $SetDFError;
 
                 # set dynamic field values
-                my $DynamicFieldObject = $Kernel::OM->Get('Kernel::System::DynamicField');
-
                 ENTRY:
                 for my $Entry (@CustomerCompanyMap) {
                     next ENTRY if $Entry->[5] ne 'dynamic_field';
@@ -256,8 +254,9 @@ sub Run {
                             Info => $LayoutObject->{LanguageObject}->Translate(
                                 'Dynamic field %s not found!',
                                 $Entry->[2],
-                            )
+                            ),
                         );
+
                         next ENTRY;
                     }
 
@@ -269,13 +268,13 @@ sub Run {
                     );
 
                     if ( !$ValueSet ) {
-                        $SetDFError
-                            .= $LayoutObject->Notify(
-                                Info => $LayoutObject->{LanguageObject}->Translate(
-                                    'Unable to set value for dynamic field %s!',
-                                    $Entry->[2],
-                                ),
-                            );
+                        $SetDFError .= $LayoutObject->Notify(
+                            Info => $LayoutObject->{LanguageObject}->Translate(
+                                'Unable to set value for dynamic field %s!',
+                                $Entry->[2],
+                            ),
+                        );
+
                         next ENTRY;
                     }
                 }
@@ -490,8 +489,6 @@ sub Run {
                     );
 
                 # set dynamic field values
-                my $DynamicFieldObject = $Kernel::OM->Get('Kernel::System::DynamicField');
-
                 ENTRY:
                 for my $Entry ( @{ $ConfigObject->Get( $GetParam{Source} )->{Map} } ) {
                     next ENTRY if $Entry->[5] ne 'dynamic_field';
@@ -505,6 +502,7 @@ sub Run {
                                 $Entry->[2],
                             ),
                         );
+
                         next ENTRY;
                     }
 
@@ -516,13 +514,13 @@ sub Run {
                     );
 
                     if ( !$ValueSet ) {
-                        $Output
-                            .= $LayoutObject->Notify(
-                                Info => $LayoutObject->{LanguageObject}->Translate(
-                                    'Unable to set value for dynamic field %s!',
-                                    $Entry->[2],
-                                ),
-                            );
+                        $Output .= $LayoutObject->Notify(
+                            Info => $LayoutObject->{LanguageObject}->Translate(
+                                'Unable to set value for dynamic field %s!',
+                                $Entry->[2],
+                            ),
+                        );
+
                         next ENTRY;
                     }
                 }
@@ -532,6 +530,7 @@ sub Run {
                     Data         => \%Param,
                 );
                 $Output .= $LayoutObject->Footer();
+
                 return $Output;
             }
         }

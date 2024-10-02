@@ -2,9 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.de/
+# Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.io/
 # --
-# $origin: otobo - 9274efd624fc535c4a2eea45a6e833b4eddcc6ce - Kernel/Modules/AdminCustomerUser.pm
+# $origin: otobo - 4dade81e7e04433cb2aed36af0c8727d822a1c61 - Kernel/Modules/AdminCustomerUser.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -247,7 +247,6 @@ sub Run {
     elsif ( $Self->{Subaction} eq 'Download' ) {
         my $Group = $ParamObject->GetParam( Param => 'Group' ) || '';
         my $User  = $ParamObject->GetParam( Param => 'ID' )    || '';
-        my $File  = $ParamObject->GetParam( Param => 'File' )  || '';
 
         # get user data
         my %UserData    = $CustomerUserObject->CustomerUserDataGet( User => $User );
@@ -426,8 +425,6 @@ sub Run {
             if ( $UpdateSuccess || $UpdateOnlyPreferences ) {
 
                 # set dynamic field values
-                my $DynamicFieldObject = $Kernel::OM->Get('Kernel::System::DynamicField');
-
                 ENTRY:
                 for my $Entry ( @{ $ConfigObject->Get($Source)->{Map} } ) {
                     next ENTRY if $Entry->[5] ne 'dynamic_field';
@@ -679,12 +676,9 @@ sub Run {
             );
             if ($User) {
 
-                # set dynamic field values
-                my $DynamicFieldObject = $Kernel::OM->Get('Kernel::System::DynamicField');
-
                 ENTRY:
                 for my $Entry ( @{ $ConfigObject->Get($Source)->{Map} } ) {
-                    next ENTRY if $Entry->[5] ne 'dynamic_field';
+                    next ENTRY unless $Entry->[5] eq 'dynamic_field';
 
                     my $DynamicFieldConfig = $Self->{DynamicFieldLookup}->{ $Entry->[2] };
 
@@ -695,6 +689,7 @@ sub Run {
                                 $Entry->[2],
                             ),
                         );
+
                         next ENTRY;
                     }
 
@@ -712,6 +707,7 @@ sub Run {
                                 $Entry->[2],
                             ),
                         );
+
                         next ENTRY;
                     }
                 }
@@ -1108,8 +1104,6 @@ sub _Edit {
     # Get layout object.
     my $LayoutObject = $Kernel::OM->Get('Kernel::Output::HTML::Layout');
 
-    my $Output = '';
-
     $LayoutObject->Block(
         Name => 'Overview',
         Data => \%Param,
@@ -1146,7 +1140,11 @@ sub _Edit {
     my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
 
     # update user
-    if ( $ConfigObject->Get( $Param{Source} )->{ReadOnly} || $ConfigObject->Get( $Param{Source} )->{Module} =~ /LDAP/i )
+    if (
+        $ConfigObject->Get( $Param{Source} )->{ReadOnly}
+        ||
+        $ConfigObject->Get( $Param{Source} )->{Module} =~ /LDAP/i
+        )
     {
         $UpdateOnlyPreferences = 1;
     }
@@ -1504,8 +1502,7 @@ sub _Edit {
                 next PRIO;
             }
 
-            my $Module = $Preference{Module}
-                || 'Kernel::Output::HTML::CustomerPreferencesGeneric';
+            my $Module = $Preference{Module} || 'Kernel::Output::HTML::CustomerPreferencesGeneric';
 
             # load module
             if ( $Kernel::OM->Get('Kernel::System::Main')->Require($Module) ) {
