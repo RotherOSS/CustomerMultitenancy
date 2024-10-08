@@ -32,6 +32,8 @@ sub Data {
         '';
     $Self->{Translation}->{'Specifies the group that can set multitenancy for customer. Multitenancy does not apply to members of this group.'} =
         '';
+    $Self->{Translation}->{'This option will deny the access to customer company tickets, which are not created by the customer user. Please also deactivate "CustomerFrontend::Navigation###CustomerTicketOverview###002-Ticket" so that the button is no longer visible.'} =
+        '';
 
 
     push @{ $Self->{JavaScriptStrings} // [] }, (
